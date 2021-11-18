@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestString(t *testing.T) {
+func TestProgramString(t *testing.T) {
 	program := &Program{
 		Statements: []Statement{
 			&LetStatement{
