@@ -1,7 +1,6 @@
 package lexer
 
 import (
-	"fmt"
 	"monkey/token"
 	"testing"
 
@@ -119,7 +118,7 @@ if (5 < 10) {
 	l := New(input)
 	for index, expectedToken := range testTokens {
 		token := l.NextToken()
-		assert.Equal(t, expectedToken.expectedType, token.Type, fmt.Sprintf("Wrong token type at %d", index))
-		assert.Equal(t, expectedToken.expectedLiteral, token.Literal, fmt.Sprintf("Wrong literal at %d", index))
+		assert.Equal(t, expectedToken.expectedType, token.Type, "Wrong token type at %d", index)
+		assert.Equal(t, expectedToken.expectedLiteral, token.Literal, "Wrong literal at %d", index)
 	}
 }
