@@ -32,3 +32,15 @@ const (
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 )
+
+var reservedKeywords = map[string]TokenType{
+	"fn":  FUNCTION,
+	"let": LET,
+}
+
+func LookupIdentifier(ident string) TokenType {
+	if tok, ok := reservedKeywords[ident]; ok {
+		return tok
+	}
+	return IDENTIFIER
+}
