@@ -54,3 +54,20 @@ return 993322;
 		require.Equal(t, "return", returnStatement.TokenLiteral(), "Wrong TokenLiteral")
 	}
 }
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	identifier, ok := statement.Expression.(*ast.Identifier)
+	require.True(t, ok, "expression is not Identifier, %s", statement.Expression)
+	require.Equal(t, "foobar", identifier.Value, "identifier.Value is not foobar, %s", identifier.Value)
+	require.Equal(t, "foobar", identifier.TokenLiteral(), "identifier.TokenLiteral() is not foobar, %s", identifier.TokenLiteral())
+}
