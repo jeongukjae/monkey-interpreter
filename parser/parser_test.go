@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/lexer"
 	"testing"
@@ -83,8 +84,39 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
-	literal, ok := statement.Expression.(*ast.IntegerLiteral)
-	require.True(t, ok, "expression is not IntegerLiteral, %s", statement.Expression)
-	require.Equal(t, int64(5), literal.Value, "literal.Value is not 5, %d", literal.Value)
-	require.Equal(t, "5", literal.TokenLiteral(), "literal.TokenLiteral() is not foobar, %s", literal.TokenLiteral())
+	testIntegerLiteral(t, statement.Expression, 5)
+}
+
+func TestParsingPrefixExpression(t *testing.T) {
+	prefixTests := []struct {
+		input        string
+		operator     string
+		integerValue int64
+	}{
+		{"!5;", "!", 5},
+		{"-15;", "-", 15},
+	}
+
+	for _, prefixTest := range prefixTests {
+		l := lexer.New(prefixTest.input)
+		p := New(l)
+		program := p.ParseProgram()
+		require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+
+		require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+
+		expression, ok := statement.Expression.(*ast.PrefixExpression)
+		require.True(t, ok, "expression is not PrefixExpression, %s", statement.Expression)
+		require.Equal(t, prefixTest.operator, expression.Operator, "Wrong operator")
+		testIntegerLiteral(t, expression.Right, prefixTest.integerValue)
+	}
+}
+
+func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) {
+	integer, ok := il.(*ast.IntegerLiteral)
+	require.True(t, ok, "il is not integer literal, %s", il)
+	require.Equal(t, value, integer.Value, "Wrong value")
+	require.Equal(t, fmt.Sprintf("%d", value), integer.TokenLiteral(), "Wrong token literal")
 }
