@@ -3,21 +3,34 @@ package main
 import (
 	"fmt"
 	"monkey/repl"
+	"strings"
 	"syscall/js"
 )
 
-func StartStepWrapper(this js.Value, s []js.Value) interface{} {
-	if len(s) == 0 {
-		return js.ValueOf("")
-	}
-
-	output := repl.StartStep(s[0].String())
-	return js.ValueOf(output)
-}
-
 func main() {
 	c := make(chan struct{}, 0)
+
+	in := make(chan string)
+	out := make(chan string)
+
 	fmt.Println("Initializing wasm")
-	js.Global().Set("runReplStep", js.FuncOf(StartStepWrapper))
+	go repl.StartChannel(in, out)
+
+	js.Global().Set("writeCommand", js.FuncOf(func(this js.Value, s []js.Value) interface{} {
+		if len(s) == 0 {
+			return js.ValueOf("")
+		}
+
+		command := strings.Trim(s[0].String(), " ")
+		if command == "" {
+			return js.ValueOf("")
+		}
+
+		in <- command
+		output := <-out
+
+		return js.ValueOf(output)
+	}))
+
 	<-c
 }

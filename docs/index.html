@@ -46,7 +46,7 @@
 
         $(document).ready(function () {
             $('#terminal').terminal(function(command) {
-                this.echo(runReplStep(command))
+                this.echo(writeCommand(command))
             }, {
                 greetings: "Hello! This is the Monkey programming language!\nFeel free to type in commands!!\n",
                 height: '100%',

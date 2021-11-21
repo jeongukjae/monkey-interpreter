@@ -29,35 +29,43 @@ const MONKEY_FACE = `
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
+	inChan := make(chan string)
+	outChan := make(chan string)
+
+	go StartChannel(inChan, outChan)
+
 	for {
 		fmt.Fprint(out, PROMPT)
 		scanned := scanner.Scan()
 		if !scanned {
 			return
 		}
-
-		line := scanner.Text()
-		fmt.Fprint(out, StartStep(line))
+		inChan <- scanner.Text()
+		output := <-outChan
+		io.WriteString(out, output)
 	}
 }
 
-func StartStep(input string) string {
-	var out bytes.Buffer
-
-	l := lexer.New(input)
-	p := parser.New(l)
-	program := p.ParseProgram()
-	if len(p.Errors()) != 0 {
-		return printParseErrors(p.Errors())
-	}
-
+func StartChannel(in chan string, out chan string, stop chan struct{}) {
 	env := object.NewEnvironment()
-	evaluated := evaluator.Eval(program, env)
-	if evaluated != nil {
-		out.WriteString(evaluated.Inspect())
+
+	for {
+		line := <-in
+
+		l := lexer.New(line)
+		p := parser.New(l)
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			out <- printParseErrors(p.Errors())
+			continue
+		}
+		evaluated := evaluator.Eval(program, env)
+		if evaluated != nil {
+			out <- evaluated.Inspect() + "\n"
+		} else {
+			out <- ""
+		}
 	}
-	out.WriteString("\n")
-	return out.String()
 }
 
 func printParseErrors(errors []string) string {
