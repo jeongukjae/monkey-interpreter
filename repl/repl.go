@@ -46,7 +46,7 @@ func Start(in io.Reader, out io.Writer) {
 	}
 }
 
-func StartChannel(in chan string, out chan string, stop chan struct{}) {
+func StartChannel(in chan string, out chan string) {
 	env := object.NewEnvironment()
 
 	for {
