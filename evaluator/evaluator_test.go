@@ -38,6 +38,7 @@ func TestEvalStringExpression(t *testing.T) {
 		expected string
 	}{
 		{`"hello world!";`, "hello world!"},
+		{`"hello" + " " + "world!";`, "hello world!"},
 	}
 
 	for _, tt := range tests {
@@ -70,6 +71,7 @@ func TestEvalBooleanExpression(t *testing.T) {
 		{"(1 < 2) == false", false},
 		{"(1 > 2) == true", false},
 		{"(1 > 2) == false", true},
+		{`"hello" + "world" == "helloworld"`, true},
 	}
 
 	for _, tt := range tests {
