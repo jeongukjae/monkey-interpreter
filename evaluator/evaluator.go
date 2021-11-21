@@ -14,15 +14,19 @@ var (
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	//
-	case *ast.Program:
-		return evalStatemens(node.Statements)
-	case *ast.ExpressionStatement:
-		return Eval(node.Expression)
-	//
 	case *ast.IntegerLiteral:
 		return &object.Intger{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
+	//
+	case *ast.PrefixExpression:
+		right := Eval(node.Right)
+		return evalPrefixExpression(node.Operator, right)
+	//
+	case *ast.Program:
+		return evalStatemens(node.Statements)
+	case *ast.ExpressionStatement:
+		return Eval(node.Expression)
 	}
 	return nil
 }
@@ -33,6 +37,28 @@ func evalStatemens(statements []ast.Statement) object.Object {
 		result = Eval(statement)
 	}
 	return result
+}
+
+func evalPrefixExpression(operator string, right object.Object) object.Object {
+	switch operator {
+	case "!":
+		return evalBangOperatorExpression(right)
+	default:
+		return NULL
+	}
+}
+
+func evalBangOperatorExpression(right object.Object) object.Object {
+	switch right {
+	case TRUE:
+		return FALSE
+	case FALSE:
+		return TRUE
+	case NULL:
+		return TRUE
+	default:
+		return FALSE
+	}
 }
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
