@@ -50,6 +50,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 		env.Set(node.Name.Value, val)
+		return NULL
 	//
 	case *ast.BlockStatement:
 		return evalBlockStatemen(node.Statements, env)
