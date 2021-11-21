@@ -249,6 +249,55 @@ func TestIfElseExpression(t *testing.T) {
 	testIdentifier(t, "y", alternative.Expression)
 }
 
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	testParserErrors(t, p)
+	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	expression, ok := statement.Expression.(*ast.FunctionLiteral)
+	require.True(t, ok, "Expression is not FunctionLiteral, %s", expression)
+
+	require.Equal(t, 2, len(expression.Parameters), "len(parameters) != 2, %s", expression.Parameters)
+	testLiteralExpression(t, "x", expression.Parameters[0])
+	testLiteralExpression(t, "y", expression.Parameters[1])
+
+	require.Equal(t, 1, len(expression.Body.Statements), "len(body.statements) != 1, %s", expression.Parameters)
+	bodyStatement, ok := expression.Body.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "body.statements[0] is not ExpressionStatement, %s", expression.Body.Statements[0])
+	testInfixExpression(t, "x", "+", "y", bodyStatement.Expression)
+}
+
+func TestFunctionParameterParsing(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedParams []string
+	}{
+		{"fn(){};", []string{}},
+		{"fn(x){};", []string{"x"}},
+		{"fn(x, y, z){};", []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		testParserErrors(t, p)
+
+		statement := program.Statements[0].(*ast.ExpressionStatement)
+		function := statement.Expression.(*ast.FunctionLiteral)
+
+		require.Equal(t, len(tt.expectedParams), len(function.Parameters), "Wrong parameter length")
+		for i, ident := range tt.expectedParams {
+			testLiteralExpression(t, ident, function.Parameters[i])
+		}
+	}
+}
+
 // Helper functionss
 //
 func testParserErrors(t *testing.T, p *Parser) {
