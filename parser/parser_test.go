@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"log"
 	"monkey/ast"
 	"monkey/lexer"
 	"testing"
@@ -19,7 +20,7 @@ let foobar = 838383;
 	p := New(l)
 
 	program := p.ParseProgram()
-	require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+	testParserErrors(t, p)
 	require.NotNil(t, program, "ParseProgram() returned nil")
 	require.Equal(t, 3, len(program.Statements), "program.Statements does not contain 3 statements.")
 
@@ -46,7 +47,7 @@ return 993322;
 	p := New(l)
 
 	program := p.ParseProgram()
-	require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+	testParserErrors(t, p)
 	require.Equal(t, 3, len(program.Statements), "statement does not contain 3 statements, %s", program.Statements)
 
 	for _, statement := range program.Statements {
@@ -63,7 +64,7 @@ func TestIdentifierExpression(t *testing.T) {
 	p := New(l)
 
 	program := p.ParseProgram()
-	require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+	testParserErrors(t, p)
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
@@ -77,7 +78,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	p := New(l)
 
 	program := p.ParseProgram()
-	require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+	testParserErrors(t, p)
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
@@ -91,7 +92,7 @@ func TestBooleanLiteralExpression(t *testing.T) {
 	p := New(l)
 
 	program := p.ParseProgram()
-	require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+	testParserErrors(t, p)
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
@@ -114,7 +115,7 @@ func TestParsingPrefixExpression(t *testing.T) {
 		l := lexer.New(prefixTest.input)
 		p := New(l)
 		program := p.ParseProgram()
-		require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+		testParserErrors(t, p)
 
 		require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
@@ -151,7 +152,7 @@ func TestParsingInfixExpression(t *testing.T) {
 		l := lexer.New(infixTest.input)
 		p := New(l)
 		program := p.ParseProgram()
-		require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+		testParserErrors(t, p)
 
 		require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
@@ -192,15 +193,74 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		l := lexer.New(precedenceTest.input)
 		p := New(l)
 		program := p.ParseProgram()
-		require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+		testParserErrors(t, p)
 
 		actual := program.String()
 		require.Equal(t, precedenceTest.expected, actual, "wrong parsing")
 	}
 }
 
+func TestIfExpression(t *testing.T) {
+	input := `if(x<y){x}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	testParserErrors(t, p)
+	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	expression, ok := statement.Expression.(*ast.IfExpression)
+	require.True(t, ok, "Expression is not if expression, %s", expression)
+
+	testInfixExpression(t, "x", "<", "y", expression.Condition)
+
+	require.Equal(t, 1, len(expression.Consequence.Statements), "Consequence does not contain 1 statements, %s", expression.Consequence.Statements)
+	consequence, ok := expression.Consequence.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "consequence.statements[0] is not if expression, %s", consequence)
+	testIdentifier(t, "x", consequence.Expression)
+
+	require.Nil(t, expression.Alternative, "alternative is not nil, %s", expression.Alternative)
+}
+
+func TestIfElseExpression(t *testing.T) {
+	input := `if(x<y){x}else{y}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	testParserErrors(t, p)
+	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	expression, ok := statement.Expression.(*ast.IfExpression)
+	require.True(t, ok, "Expression is not if expression, %s", expression)
+
+	testInfixExpression(t, "x", "<", "y", expression.Condition)
+
+	require.Equal(t, 1, len(expression.Consequence.Statements), "Consequence does not contain 1 statements, %s", expression.Consequence.Statements)
+	consequence, ok := expression.Consequence.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "consequence.statements[0] is not if expression, %s", consequence)
+	testIdentifier(t, "x", consequence.Expression)
+
+	require.Equal(t, 1, len(expression.Alternative.Statements), "Alternative does not contain 1 statements, %s", expression.Alternative.Statements)
+	alternative, ok := expression.Alternative.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "alternative.statements[0] is not if expression, %s", alternative)
+	testIdentifier(t, "y", alternative.Expression)
+}
+
 // Helper functionss
 //
+func testParserErrors(t *testing.T, p *Parser) {
+	if len(p.Errors()) != 0 {
+		log.Printf("parser has %d erros", len(p.Errors()))
+		for _, err := range p.Errors() {
+			log.Printf("parser error: \"%s\"", err)
+		}
+		t.FailNow()
+	}
+}
+
 func testIdentifier(t *testing.T, expected string, actual ast.Expression) {
 	identifier, ok := actual.(*ast.Identifier)
 	require.True(t, ok, "Expression is not identifier, %s", actual)
