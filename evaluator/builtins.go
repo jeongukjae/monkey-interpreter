@@ -1,6 +1,9 @@
 package evaluator
 
-import "monkey/object"
+import (
+	"fmt"
+	"monkey/object"
+)
 
 var builtins = map[string]*object.Builtin{
 	"len": {
@@ -21,6 +24,14 @@ var builtins = map[string]*object.Builtin{
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
 			return &object.ObjectTypeObject{Value: args[0].Type()}
+		},
+	},
+	"puts": {
+		Fn: func(args ...object.Object) object.Object {
+			for _, arg := range args {
+				fmt.Println(arg.Inspect())
+			}
+			return NULL
 		},
 	},
 }
