@@ -241,6 +241,32 @@ func TestClosure(t *testing.T) {
 	testIntegerObject(t, 4, evaluated)
 }
 
+func TestBuiltinFunction(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(2)`, "argument to len not supported, got INTEGER"},
+		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, int64(expected), evaluated)
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			require.True(t, ok, "object is not error")
+			require.Equal(t, expected, errObj.Message, "wrong error message")
+		}
+	}
+}
+
 //
 // Helper functions
 func testEval(input string) object.Object {
