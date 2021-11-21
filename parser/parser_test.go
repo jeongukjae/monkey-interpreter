@@ -11,49 +11,51 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
-	input := `
-let x = 5;
-let y = 5;
-let foobar = 838383;
-`
-	l := lexer.New(input)
-	p := New(l)
+	tests := []struct {
+		input              string
+		expectedIdentifier string
+		expectedValue      interface{}
+	}{
+		{"let x = 5;", "x", 5},
+		{"let y = false;", "y", false},
+		{"let foobar = y;", "foobar", "y"},
+	}
 
-	program := p.ParseProgram()
-	testParserErrors(t, p)
-	require.NotNil(t, program, "ParseProgram() returned nil")
-	require.Equal(t, 3, len(program.Statements), "program.Statements does not contain 3 statements.")
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
 
-	expectedIdentifiers := []string{"x", "y", "foobar"}
-	for i, expectedIdentifier := range expectedIdentifiers {
-		statement := program.Statements[i]
-		(func(statement ast.Statement, expectedIdentifier string) {
-			require.Equal(t, "let", statement.TokenLiteral(), "Wrong TokenLiternal")
-			letStatement, ok := statement.(*ast.LetStatement)
-			require.True(t, ok, "Wrong type")
-			require.Equal(t, expectedIdentifier, letStatement.Name.Value, "Wrong name")
-			require.Equal(t, expectedIdentifier, letStatement.Name.TokenLiteral(), "Wrong token literal")
-		})(statement, expectedIdentifier)
+		program := p.ParseProgram()
+		testParserErrors(t, p)
+		require.Equal(t, 1, len(program.Statements), "program.Statements does not contain 3 statements.")
+		statement := program.Statements[0]
+		testLetStatement(t, tt.expectedIdentifier, statement)
+		value := statement.(*ast.LetStatement).Value
+		testLiteralExpression(t, tt.expectedValue, value)
 	}
 }
 
 func TestReturnStatement(t *testing.T) {
-	input := `
-return 5;
-return 10;
-return 993322;
-`
-	l := lexer.New(input)
-	p := New(l)
+	tests := []struct {
+		input               string
+		expectedReturnValue interface{}
+	}{
+		{"return 5;", 5},
+		{"return false;", false},
+		{"return y;", "y"},
+	}
 
-	program := p.ParseProgram()
-	testParserErrors(t, p)
-	require.Equal(t, 3, len(program.Statements), "statement does not contain 3 statements, %s", program.Statements)
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
 
-	for _, statement := range program.Statements {
+		program := p.ParseProgram()
+		testParserErrors(t, p)
+		require.Equal(t, 1, len(program.Statements), "program.Statements does not contain 3 statements.")
+		statement := program.Statements[0]
 		returnStatement, ok := statement.(*ast.ReturnStatement)
 		require.True(t, ok, "statement is not return statement")
-		require.Equal(t, "return", returnStatement.TokenLiteral(), "Wrong TokenLiteral")
+		testLiteralExpression(t, tt.expectedReturnValue, returnStatement.ReturnValue)
 	}
 }
 
@@ -328,6 +330,14 @@ func testParserErrors(t *testing.T, p *Parser) {
 		}
 		t.FailNow()
 	}
+}
+
+func testLetStatement(t *testing.T, expected string, actual ast.Statement) {
+	require.Equal(t, "let", actual.TokenLiteral(), "Wrong TokenLiternal")
+	letStatement, ok := actual.(*ast.LetStatement)
+	require.True(t, ok, "Wrong type")
+	require.Equal(t, expected, letStatement.Name.Value, "Wrong name")
+	require.Equal(t, expected, letStatement.Name.TokenLiteral(), "Wrong token literal")
 }
 
 func testIdentifier(t *testing.T, expected string, actual ast.Expression) {
