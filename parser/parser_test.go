@@ -181,6 +181,12 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"5 < 4!=3>4", "((5 < 4) != (3 > 4))"},
 		{"5 < 4!=false", "((5 < 4) != false)"},
 		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+		{"1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"},
+		{"(5 + 5) * 2", "((5 + 5) * 2)"},
+		{"2 / (5 + 5)", "(2 / (5 + 5))"},
+		{"-(5 + 5)", "(-(5 + 5))"},
+		{"!(true == true)", "(!(true == true))"},
+		{"!(true == true ==false)", "(!((true == true) == false))"},
 	}
 	for _, precedenceTest := range precedenceTests {
 		l := lexer.New(precedenceTest.input)
@@ -193,6 +199,8 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 	}
 }
 
+// Helper functionss
+//
 func testIdentifier(t *testing.T, expected string, actual ast.Expression) {
 	identifier, ok := actual.(*ast.Identifier)
 	require.True(t, ok, "Expression is not identifier, %s", actual)
