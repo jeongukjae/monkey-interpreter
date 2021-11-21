@@ -67,10 +67,7 @@ func TestIdentifierExpression(t *testing.T) {
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
-	identifier, ok := statement.Expression.(*ast.Identifier)
-	require.True(t, ok, "expression is not Identifier, %s", statement.Expression)
-	require.Equal(t, "foobar", identifier.Value, "identifier.Value is not foobar, %s", identifier.Value)
-	require.Equal(t, "foobar", identifier.TokenLiteral(), "identifier.TokenLiteral() is not foobar, %s", identifier.TokenLiteral())
+	testIdentifier(t, "foobar", statement.Expression)
 }
 
 func TestIntegerLiteralExpression(t *testing.T) {
@@ -84,7 +81,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
-	testIntegerLiteral(t, statement.Expression, 5)
+	testIntegerLiteral(t, 5, statement.Expression)
 }
 
 func TestParsingPrefixExpression(t *testing.T) {
@@ -110,7 +107,7 @@ func TestParsingPrefixExpression(t *testing.T) {
 		expression, ok := statement.Expression.(*ast.PrefixExpression)
 		require.True(t, ok, "expression is not PrefixExpression, %s", statement.Expression)
 		require.Equal(t, prefixTest.operator, expression.Operator, "Wrong operator")
-		testIntegerLiteral(t, expression.Right, prefixTest.integerValue)
+		testIntegerLiteral(t, prefixTest.integerValue, expression.Right)
 	}
 }
 
@@ -141,11 +138,7 @@ func TestParsingInfixExpression(t *testing.T) {
 		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 		require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
 
-		expression, ok := statement.Expression.(*ast.InfixExpression)
-		require.True(t, ok, "expression is not InfixExpression, %s", statement.Expression)
-		testIntegerLiteral(t, expression.Left, infixTest.rightValue)
-		require.Equal(t, infixTest.operator, expression.Operator, "Wrong operator")
-		testIntegerLiteral(t, expression.Right, infixTest.rightValue)
+		testInfixExpression(t, infixTest.leftValue, infixTest.operator, infixTest.rightValue, statement.Expression)
 	}
 }
 
@@ -178,9 +171,37 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 	}
 }
 
-func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) {
-	integer, ok := il.(*ast.IntegerLiteral)
-	require.True(t, ok, "il is not integer literal, %s", il)
-	require.Equal(t, value, integer.Value, "Wrong value")
-	require.Equal(t, fmt.Sprintf("%d", value), integer.TokenLiteral(), "Wrong token literal")
+func testIdentifier(t *testing.T, expected string, actual ast.Expression) {
+	identifier, ok := actual.(*ast.Identifier)
+	require.True(t, ok, "Expression is not identifier, %s", actual)
+	require.Equal(t, expected, identifier.Value, "Wrong value")
+	require.Equal(t, expected, identifier.TokenLiteral(), "Wrong token literal")
+}
+
+func testIntegerLiteral(t *testing.T, expected int64, actual ast.Expression) {
+	integer, ok := actual.(*ast.IntegerLiteral)
+	require.True(t, ok, "Expression is not integer literal, %s", actual)
+	require.Equal(t, expected, integer.Value, "Wrong value")
+	require.Equal(t, fmt.Sprintf("%d", expected), integer.TokenLiteral(), "Wrong token literal")
+}
+
+func testLiteralExpression(t *testing.T, expected interface{}, actual ast.Expression) {
+	switch v := expected.(type) {
+	case int:
+		testIntegerLiteral(t, int64(v), actual)
+	case int64:
+		testIntegerLiteral(t, v, actual)
+	case string:
+		testIdentifier(t, v, actual)
+	default:
+		t.Errorf("type of expression not handled %T", actual)
+	}
+}
+
+func testInfixExpression(t *testing.T, left interface{}, operator string, right interface{}, actual ast.Expression) {
+	actualOperator, ok := actual.(*ast.InfixExpression)
+	require.True(t, ok, "Expression is not infix expression, %s", actual)
+	testLiteralExpression(t, left, actualOperator.Left)
+	require.Equal(t, operator, actualOperator.Operator, "wrong operator")
+	testLiteralExpression(t, right, actualOperator.Right)
 }
