@@ -39,6 +39,23 @@ func TestEvalBooleanExpression(t *testing.T) {
 	}{
 		{"true", true},
 		{"false", false},
+		{"1 < 2", true},
+		{"1 > 2", false},
+		{"1 > 1", false},
+		{"1 < 1", false},
+		{"1 == 1", true},
+		{"1 != 1", false},
+		{"1 == 2", false},
+		{"1 != 2", true},
+		{"true == true", true},
+		{"false == false", true},
+		{"false == true", false},
+		{"false != true", true},
+		{"true != false", true},
+		{"(1 < 2) == true", true},
+		{"(1 < 2) == false", false},
+		{"(1 > 2) == true", false},
+		{"(1 > 2) == false", true},
 	}
 
 	for _, tt := range tests {
@@ -83,6 +100,6 @@ func testIntegerObject(t *testing.T, expected int64, actual object.Object) {
 
 func testBooleanObject(t *testing.T, expected bool, actual object.Object) {
 	result, ok := actual.(*object.Boolean)
-	require.True(t, ok, "object is not integer")
+	require.True(t, ok, "object is not boolean, got %s", actual)
 	require.Equal(t, expected, result.Value, "object has wrong value")
 }
