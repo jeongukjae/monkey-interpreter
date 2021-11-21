@@ -87,6 +87,20 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	testLiteralExpression(t, 5, statement.Expression)
 }
 
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello world!";`
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	testParserErrors(t, p)
+	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	testLiteralExpression(t, "hello world!", statement.Expression)
+}
+
 func TestBooleanLiteralExpression(t *testing.T) {
 	input := "true;"
 
@@ -354,6 +368,13 @@ func testIntegerLiteral(t *testing.T, expected int64, actual ast.Expression) {
 	require.Equal(t, fmt.Sprintf("%d", expected), integer.TokenLiteral(), "Wrong token literal")
 }
 
+func testStringLiteral(t *testing.T, expected string, actual ast.Expression) {
+	str, ok := actual.(*ast.StringLiteral)
+	require.True(t, ok, "Expression is not string literal, %s", actual)
+	require.Equal(t, expected, str.Value, "Wrong value")
+	require.Equal(t, expected, str.TokenLiteral(), "Wrong token literal")
+}
+
 func testBoolLiteral(t *testing.T, expected bool, actual ast.Expression) {
 	boolean, ok := actual.(*ast.Boolean)
 	require.True(t, ok, "Expression is not boolean literal, %s", actual)
@@ -368,7 +389,12 @@ func testLiteralExpression(t *testing.T, expected interface{}, actual ast.Expres
 	case int64:
 		testIntegerLiteral(t, v, actual)
 	case string:
-		testIdentifier(t, v, actual)
+		switch actual.(type) {
+		case *ast.Identifier:
+			testIdentifier(t, v, actual)
+		case *ast.StringLiteral:
+			testStringLiteral(t, v, actual)
+		}
 	case bool:
 		testBoolLiteral(t, v, actual)
 	default:

@@ -16,7 +16,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	//
 	case *ast.IntegerLiteral:
-		return &object.Intger{Value: node.Value}
+		return &object.Integer{Value: node.Value}
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
 	case *ast.Identifier:
@@ -156,8 +158,8 @@ func evalMinusOperatorExpression(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
 		return newError("unknown operator: -%s", right.Type())
 	}
-	value := right.(*object.Intger).Value
-	return &object.Intger{Value: -value}
+	value := right.(*object.Integer).Value
+	return &object.Integer{Value: -value}
 }
 
 // infix expression
@@ -177,18 +179,18 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 }
 
 func evalIntegerInfixExpression(operator string, left object.Object, right object.Object) object.Object {
-	leftVal := left.(*object.Intger).Value
-	rightVal := right.(*object.Intger).Value
+	leftVal := left.(*object.Integer).Value
+	rightVal := right.(*object.Integer).Value
 
 	switch operator {
 	case "+":
-		return &object.Intger{Value: leftVal + rightVal}
+		return &object.Integer{Value: leftVal + rightVal}
 	case "-":
-		return &object.Intger{Value: leftVal - rightVal}
+		return &object.Integer{Value: leftVal - rightVal}
 	case "*":
-		return &object.Intger{Value: leftVal * rightVal}
+		return &object.Integer{Value: leftVal * rightVal}
 	case "/":
-		return &object.Intger{Value: leftVal / rightVal}
+		return &object.Integer{Value: leftVal / rightVal}
 	case "==":
 		return nativeBoolToBooleanObject(leftVal == rightVal)
 	case "!=":
