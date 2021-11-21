@@ -53,7 +53,9 @@ func StartStep(input string) string {
 
 	env := object.NewEnvironment()
 	evaluated := evaluator.Eval(program, env)
-	out.WriteString(evaluated.Inspect())
+	if evaluated != nil {
+		out.WriteString(evaluated.Inspect())
+	}
 	out.WriteString("\n")
 	return out.String()
 }
