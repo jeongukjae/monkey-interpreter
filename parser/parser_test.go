@@ -188,6 +188,7 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
 		{"!(true == true ==false)", "(!((true == true) == false))"},
+		{"a + add(b*c) +d", "((a + add((b * c))) + d)"},
 	}
 	for _, precedenceTest := range precedenceTests {
 		l := lexer.New(precedenceTest.input)
@@ -296,6 +297,25 @@ func TestFunctionParameterParsing(t *testing.T) {
 			testLiteralExpression(t, ident, function.Parameters[i])
 		}
 	}
+}
+
+func TestCallExpressionParsing(t *testing.T) {
+	input := "add(1, 2*3, 4+5);"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	testParserErrors(t, p)
+	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	expression, ok := statement.Expression.(*ast.CallExpression)
+	require.True(t, ok, "Expression is not CallExpression, %s", expression)
+	testIdentifier(t, "add", expression.Function)
+	require.Equal(t, 3, len(expression.Arguments), "len(Arguments) != 3, %s", expression.Arguments)
+	testLiteralExpression(t, 1, expression.Arguments[0])
+	testInfixExpression(t, 2, "*", 3, expression.Arguments[1])
+	testInfixExpression(t, 4, "+", 5, expression.Arguments[2])
 }
 
 // Helper functionss
