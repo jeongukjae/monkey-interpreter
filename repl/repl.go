@@ -7,6 +7,7 @@ import (
 	"io"
 	"monkey/evaluator"
 	"monkey/lexer"
+	"monkey/object"
 	"monkey/parser"
 )
 
@@ -50,7 +51,8 @@ func StartStep(input string) string {
 		return printParseErrors(p.Errors())
 	}
 
-	evaluated := evaluator.Eval(program)
+	env := object.NewEnvironment()
+	evaluated := evaluator.Eval(program, env)
 	out.WriteString(evaluated.Inspect())
 	out.WriteString("\n")
 	return out.String()
