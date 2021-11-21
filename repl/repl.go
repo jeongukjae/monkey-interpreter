@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"monkey/evaluator"
 	"monkey/lexer"
 	"monkey/parser"
 )
@@ -49,7 +50,8 @@ func StartStep(input string) string {
 		return printParseErrors(p.Errors())
 	}
 
-	out.WriteString(program.String())
+	evaluated := evaluator.Eval(program)
+	out.WriteString(evaluated.Inspect())
 	out.WriteString("\n")
 	return out.String()
 }
