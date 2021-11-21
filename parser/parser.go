@@ -61,6 +61,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixParseFn(token.INT, p.parseIntegerLiteral)
 	p.registerPrefixParseFn(token.BANG, p.parsePrefixExpression)
 	p.registerPrefixParseFn(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefixParseFn(token.TRUE, p.parseBoolean)
+	p.registerPrefixParseFn(token.FALSE, p.parseBoolean)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfixParseFn(token.EQ, p.parseInfixExpression)
@@ -178,6 +180,10 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 	literal.Value = value
 	return literal
+}
+
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.currentToken, Value: p.currentTokenIs(token.TRUE)}
 }
 
 // Pratt parser

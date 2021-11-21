@@ -67,7 +67,7 @@ func TestIdentifierExpression(t *testing.T) {
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
-	testIdentifier(t, "foobar", statement.Expression)
+	testLiteralExpression(t, "foobar", statement.Expression)
 }
 
 func TestIntegerLiteralExpression(t *testing.T) {
@@ -81,16 +81,32 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
-	testIntegerLiteral(t, 5, statement.Expression)
+	testLiteralExpression(t, 5, statement.Expression)
+}
+
+func TestBooleanLiteralExpression(t *testing.T) {
+	input := "true;"
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	require.Equal(t, 0, len(p.Errors()), "parser errors: %s", p.Errors())
+	require.Equal(t, 1, len(program.Statements), "statement does not contain 1 statements, %s", program.Statements)
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	testLiteralExpression(t, true, statement.Expression)
 }
 
 func TestParsingPrefixExpression(t *testing.T) {
 	prefixTests := []struct {
 		input        string
 		operator     string
-		integerValue int64
+		integerValue interface{}
 	}{
 		{"!5;", "!", 5},
+		{"!true;", "!", true},
+		{"!false;", "!", false},
 		{"-15;", "-", 15},
 	}
 
@@ -107,16 +123,16 @@ func TestParsingPrefixExpression(t *testing.T) {
 		expression, ok := statement.Expression.(*ast.PrefixExpression)
 		require.True(t, ok, "expression is not PrefixExpression, %s", statement.Expression)
 		require.Equal(t, prefixTest.operator, expression.Operator, "Wrong operator")
-		testIntegerLiteral(t, prefixTest.integerValue, expression.Right)
+		testLiteralExpression(t, prefixTest.integerValue, expression.Right)
 	}
 }
 
 func TestParsingInfixExpression(t *testing.T) {
 	infixTests := []struct {
 		input      string
-		leftValue  int64
+		leftValue  interface{}
 		operator   string
-		rightValue int64
+		rightValue interface{}
 	}{
 		{"5 + 5;", 5, "+", 5},
 		{"5 - 5;", 5, "-", 5},
@@ -126,6 +142,9 @@ func TestParsingInfixExpression(t *testing.T) {
 		{"5 < 5;", 5, "<", 5},
 		{"5 == 5;", 5, "==", 5},
 		{"5 != 5;", 5, "!=", 5},
+		{"true != false;", true, "!=", false},
+		{"false != false;", false, "!=", false},
+		{"false != true;", false, "!=", true},
 	}
 
 	for _, infixTest := range infixTests {
@@ -154,10 +173,13 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"a * b * c", "((a * b) * c)"},
 		{"a * b / c", "((a * b) / c)"},
 		{"a + b / c", "(a + (b / c))"},
+		{"true", "true"},
+		{"false", "false"},
 		{"a+b*c+d/e-f", "(((a + (b * c)) + (d / e)) - f)"},
 		{"3 + 4; -5 * 5;", "(3 + 4)((-5) * 5)"},
 		{"5 > 4==3<4", "((5 > 4) == (3 < 4))"},
 		{"5 < 4!=3>4", "((5 < 4) != (3 > 4))"},
+		{"5 < 4!=false", "((5 < 4) != false)"},
 		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
 	}
 	for _, precedenceTest := range precedenceTests {
@@ -185,6 +207,13 @@ func testIntegerLiteral(t *testing.T, expected int64, actual ast.Expression) {
 	require.Equal(t, fmt.Sprintf("%d", expected), integer.TokenLiteral(), "Wrong token literal")
 }
 
+func testBoolLiteral(t *testing.T, expected bool, actual ast.Expression) {
+	boolean, ok := actual.(*ast.Boolean)
+	require.True(t, ok, "Expression is not boolean literal, %s", actual)
+	require.Equal(t, expected, boolean.Value, "Wrong value")
+	require.Equal(t, fmt.Sprintf("%t", expected), boolean.TokenLiteral(), "Wrong token literal")
+}
+
 func testLiteralExpression(t *testing.T, expected interface{}, actual ast.Expression) {
 	switch v := expected.(type) {
 	case int:
@@ -193,6 +222,8 @@ func testLiteralExpression(t *testing.T, expected interface{}, actual ast.Expres
 		testIntegerLiteral(t, v, actual)
 	case string:
 		testIdentifier(t, v, actual)
+	case bool:
+		testBoolLiteral(t, v, actual)
 	default:
 		t.Errorf("type of expression not handled %T", actual)
 	}
