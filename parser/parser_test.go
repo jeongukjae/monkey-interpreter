@@ -205,6 +205,8 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"!(true == true)", "(!(true == true))"},
 		{"!(true == true ==false)", "(!((true == true) == false))"},
 		{"a + add(b*c) +d", "((a + add((b * c))) + d)"},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1,2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
 	}
 	for _, precedenceTest := range precedenceTests {
 		l := lexer.New(precedenceTest.input)
@@ -351,6 +353,23 @@ func TestParsingArrayLiteral(t *testing.T) {
 	testLiteralExpression(t, 1, array.Elements[0])
 	testInfixExpression(t, 2, "*", 2, array.Elements[1])
 	testInfixExpression(t, 3, "+", 3, array.Elements[2])
+}
+
+func TestParsingIndexExpression(t *testing.T) {
+	input := "myArray[1 + 1]"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	testParserErrors(t, p)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	indexExp, ok := stmt.Expression.(*ast.IndexExpression)
+	require.True(t, ok, "Expression is not IndexExpression, %s", indexExp)
+
+	testIdentifier(t, "myArray", indexExp.Left)
+	testInfixExpression(t, 1, "+", 1, indexExp.Index)
 }
 
 // Helper functionss
