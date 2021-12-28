@@ -334,6 +334,25 @@ func TestCallExpressionParsing(t *testing.T) {
 	testInfixExpression(t, 4, "+", 5, expression.Arguments[2])
 }
 
+func TestParsingArrayLiteral(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	testParserErrors(t, p)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+	array, ok := stmt.Expression.(*ast.ArrayLiteral)
+	require.True(t, ok, "Expression is not ArrayLiteral, %s", array)
+	require.Equal(t, 3, len(array.Elements), "len(Arguments) != 3, %s", array.Elements)
+
+	testLiteralExpression(t, 1, array.Elements[0])
+	testInfixExpression(t, 2, "*", 2, array.Elements[1])
+	testInfixExpression(t, 3, "+", 3, array.Elements[2])
+}
+
 // Helper functionss
 //
 func testParserErrors(t *testing.T, p *Parser) {
