@@ -267,6 +267,19 @@ func TestBuiltinFunction(t *testing.T) {
 	}
 }
 
+func TestArrayLiterals(t *testing.T) {
+	input := `[1, 2 * 2, 3 + 3]`
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Array)
+
+	require.True(t, ok, "object is not array, %s", result)
+	require.Equal(t, 3, len(result.Elements), "array has wrong num of elements, %s", result)
+
+	testIntegerObject(t, 1, result.Elements[0])
+	testIntegerObject(t, 4, result.Elements[1])
+	testIntegerObject(t, 6, result.Elements[2])
+}
+
 //
 // Helper functions
 func testEval(input string) object.Object {
