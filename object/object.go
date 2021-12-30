@@ -22,11 +22,16 @@ const (
 	BUILTIN_OBJ      = "BUILTIN"
 	OBJECT_TYPE_OBJ  = "OBJECT_TYPE"
 	ARRAY_OBJ        = "ARRAY_OBJ"
+	HASH_OBJ         = "HASH_OBJ"
 )
 
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+}
+
+type Hashable interface {
+	HashKey() HashKey
 }
 
 type HashKey struct {
@@ -137,6 +142,30 @@ func (a *Array) Inspect() string {
 	out.WriteString("[")
 	out.WriteString(strings.Join(elements, ", "))
 	out.WriteString("]")
+
+	return out.String()
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	pairs := []string{}
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
 
 	return out.String()
 }

@@ -309,6 +309,39 @@ func TestArrayIndexExpressions(t *testing.T) {
 	}
 }
 
+func TestHashLiteral(t *testing.T) {
+	input := `let two = "two";
+	{
+		"one": 10 -9,
+		two: 1 +1,
+		"thr" + "ee": 6 / 2,
+		4 : 4,
+		true: 5,
+		false: 6
+	}
+	`
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Hash)
+
+	require.True(t, ok, "object is not Hash, %s", evaluated)
+	expected := map[object.HashKey]int64{
+		(&object.String{Value: "one"}).HashKey():   1,
+		(&object.String{Value: "two"}).HashKey():   2,
+		(&object.String{Value: "three"}).HashKey(): 3,
+		(&object.Integer{Value: 4}).HashKey():      4,
+		(&object.Boolean{Value: true}).HashKey():   5,
+		(&object.Boolean{Value: false}).HashKey():  6,
+	}
+
+	require.Equal(t, len(expected), len(result.Pairs))
+	for key, value := range expected {
+		pair, ok := result.Pairs[key]
+		require.True(t, ok)
+		testIntegerObject(t, value, pair.Value)
+	}
+}
+
 //
 // Helper functions
 func testEval(input string) object.Object {
