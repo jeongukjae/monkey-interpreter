@@ -372,6 +372,67 @@ func TestParsingIndexExpression(t *testing.T) {
 	testInfixExpression(t, 1, "+", 1, indexExp.Index)
 }
 
+func TestParsingHashLiterals(t *testing.T) {
+	testcases := []struct {
+		input    string
+		expected map[string]func(ast.Expression)
+	}{
+		{
+			`{}`,
+			map[string]func(ast.Expression){},
+		},
+		{
+			`{"one": 1, "two": 2, "three": 3}`,
+			map[string]func(ast.Expression){
+				"one": func(e ast.Expression) {
+					testIntegerLiteral(t, 1, e)
+				},
+				"two": func(e ast.Expression) {
+					testIntegerLiteral(t, 2, e)
+				},
+				"three": func(e ast.Expression) {
+					testIntegerLiteral(t, 3, e)
+				},
+			},
+		},
+		{
+			`{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}`,
+			map[string]func(ast.Expression){
+				"one": func(e ast.Expression) {
+					testInfixExpression(t, 0, "+", 1, e)
+				},
+				"two": func(e ast.Expression) {
+					testInfixExpression(t, 10, "-", 8, e)
+				},
+				"three": func(e ast.Expression) {
+					testInfixExpression(t, 15, "/", 5, e)
+				},
+			},
+		},
+	}
+
+	for _, tt := range testcases {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		testParserErrors(t, p)
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		require.True(t, ok, "statements[0] is not ExpressionStatement, %s", program.Statements[0])
+		hash, ok := stmt.Expression.(*ast.HashLiteral)
+		require.True(t, ok, "Expression is not HashLiteral, %s", hash)
+
+		require.Equal(t, len(tt.expected), len(hash.Pairs), "len(Arguments) != 3, %s", hash.Pairs)
+
+		for key, value := range hash.Pairs {
+			literal, ok := key.(*ast.StringLiteral)
+			require.True(t, ok)
+
+			tt.expected[literal.String()](value)
+		}
+	}
+}
+
 // Helper functionss
 //
 func testParserErrors(t *testing.T, p *Parser) {
