@@ -30,6 +30,7 @@ if (5 < 10) {
 "foobar";
 "foo bar";
 [1, 2];
+{"foo":"bar"}
 `
 
 	testTokens := []struct {
@@ -127,6 +128,12 @@ if (5 < 10) {
 		{token.INT, "2"},
 		{token.R_BRACKET, "]"},
 		{token.SEMICOLON, ";"},
+
+		{token.L_BRACE, "{"},
+		{token.STRING, "foo"},
+		{token.COLON, ":"},
+		{token.STRING, "bar"},
+		{token.R_BRACE, "}"},
 		{token.EOF, ""},
 	}
 

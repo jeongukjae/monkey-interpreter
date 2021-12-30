@@ -41,6 +41,8 @@ const (
 	L_BRACKET = "["
 	R_BRACKET = "]"
 
+	COLON = ":"
+
 	// Reserved
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
